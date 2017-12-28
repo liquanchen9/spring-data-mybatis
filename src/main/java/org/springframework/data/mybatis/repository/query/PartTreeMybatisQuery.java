@@ -157,7 +157,11 @@ public class PartTreeMybatisQuery extends AbstractMybatisQuery {
                 if (null == columnName) {
                     throw new MybatisQueryException("can not find property: " + part.getProperty().getSegment() + " in " + method.getName());
                 }
-
+                assert part.getParameterRequired() == true;
+                boolean oneArgOperate = part.getType().getNumberOfArguments() == 1;
+                if(oneArgOperate) {
+                	builder.append("<if test=\"" + property.getName() + " != null and " + property.getName() + " != '' \">");
+                }
                 builder.append(" and ");
 
                 IgnoreCaseType ignoreCaseType = part.shouldIgnoreCase();
@@ -173,6 +177,10 @@ public class PartTreeMybatisQuery extends AbstractMybatisQuery {
                     properties[i] = resolveParameterName(c++);
                 }
                 builder.append(generator.buildConditionCaluse(part.getType(), ignoreCaseType, properties));
+                
+                if(oneArgOperate) {
+                	builder.append("</if>");
+                }
             }
 
             builder.append("</trim>");

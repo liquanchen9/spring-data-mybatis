@@ -58,23 +58,23 @@ public class MybatisMapperGenerator {
             case CONTAINING:
             case NOT_CONTAINING:
                 if (ignoreCaseType == ALWAYS || ignoreCaseType == WHEN_POSSIBLE) {
-                    builder.append("concat('%',upper(#{" + properties[0] + "}),'%')");
+                    builder.append("${" + properties[0] + "=('%'+" + properties[0] + "+'%'),''}upper(#{" + properties[0] + "}) ");
                 } else {
-                    builder.append("concat('%',#{" + properties[0] + "},'%')");
+                    builder.append("${" + properties[0] + "=('%'+" + properties[0] + "+'%'),''}#{" + properties[0] + "}");
                 }
                 break;
             case STARTING_WITH:
                 if (ignoreCaseType == ALWAYS || ignoreCaseType == WHEN_POSSIBLE) {
-                    builder.append("concat(upper(#{" + properties[0] + "}),'%')");
+                	builder.append("${" + properties[0] + "=(" + properties[0] + "+'%'),''}upper(#{" + properties[0] + "}) ");
                 } else {
-                    builder.append("concat(#{" + properties[0] + "},'%')");
+                    builder.append("${" + properties[0] + "=(" + properties[0] + "+'%'),''}#{" + properties[0] + "}");
                 }
                 break;
             case ENDING_WITH:
                 if (ignoreCaseType == ALWAYS || ignoreCaseType == WHEN_POSSIBLE) {
-                    builder.append("concat('%',upper(#{" + properties[0] + "}))");
+                    builder.append("${" + properties[0] + "=('%'+" + properties[0] + "),''}upper(#{"+ properties[0] + "}))");
                 } else {
-                    builder.append("concat('%',#{" + properties[0] + "})");
+                    builder.append("${" + properties[0] + "=('%'+" + properties[0] + "),''}#{" + properties[0] + "})");
                 }
                 break;
             case IN:

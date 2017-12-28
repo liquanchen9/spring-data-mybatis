@@ -200,7 +200,7 @@ public abstract class AbstractCrudService<R extends MybatisRepository<T, ID>, T,
 
     protected <X extends T> void doDelete(X condition) {
         if (useCache()) {
-            List<T> list = findBasicAll(condition);
+            List<T> list = repository.findBasicAll(condition);
             if (!CollectionUtils.isEmpty(list)) {
                 for (T entity : list) {
                     evictCache(entity);
