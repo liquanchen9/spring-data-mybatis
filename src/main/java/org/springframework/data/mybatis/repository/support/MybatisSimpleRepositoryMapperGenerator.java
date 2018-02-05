@@ -18,29 +18,52 @@
 
 package org.springframework.data.mybatis.repository.support;
 
-import org.apache.ibatis.builder.xml.XMLMapperBuilder;
-import org.apache.ibatis.session.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.mapping.*;
-import org.springframework.data.mapping.model.MappingException;
-import org.springframework.data.mybatis.annotations.*;
-import org.springframework.data.mybatis.mapping.*;
-import org.springframework.data.mybatis.repository.dialect.Dialect;
-import org.springframework.data.mybatis.repository.dialect.identity.IdentityColumnSupport;
-import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
-import org.springframework.data.repository.query.parser.Part.Type;
-import org.springframework.util.StringUtils;
+import static org.springframework.data.mybatis.annotations.Id.GenerationType.AUTO;
+import static org.springframework.data.mybatis.annotations.Id.GenerationType.IDENTITY;
+import static org.springframework.data.mybatis.annotations.Id.GenerationType.SEQUENCE;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import static org.springframework.data.mybatis.annotations.Id.GenerationType.*;
+import org.apache.ibatis.builder.xml.XMLMapperBuilder;
+import org.apache.ibatis.session.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.mapping.Association;
+import org.springframework.data.mapping.AssociationHandler;
+import org.springframework.data.mapping.PersistentProperty;
+import org.springframework.data.mapping.PreferredConstructor;
+import org.springframework.data.mapping.PropertyHandler;
+import org.springframework.data.mapping.SimpleAssociationHandler;
+import org.springframework.data.mapping.SimplePropertyHandler;
+import org.springframework.data.mapping.model.MappingException;
+import org.springframework.data.mybatis.annotations.Condition;
+import org.springframework.data.mybatis.annotations.Conditions;
+import org.springframework.data.mybatis.mapping.MybatisEmbeddedAssociation;
+import org.springframework.data.mybatis.mapping.MybatisManyToOneAssociation;
+import org.springframework.data.mybatis.mapping.MybatisMappingContext;
+import org.springframework.data.mybatis.mapping.MybatisOneToManyAssociation;
+import org.springframework.data.mybatis.mapping.MybatisPersistentEntity;
+import org.springframework.data.mybatis.mapping.MybatisPersistentEntityImpl;
+import org.springframework.data.mybatis.mapping.MybatisPersistentProperty;
+import org.springframework.data.mybatis.repository.annotation.Query;
+import org.springframework.data.mybatis.repository.dialect.Dialect;
+import org.springframework.data.mybatis.repository.dialect.identity.IdentityColumnSupport;
+import org.springframework.data.mybatis.repository.query.MybatisQueryMethod;
+import org.springframework.data.mybatis.repository.query.QueryAnnotationStatementXmlGenerator;
+import org.springframework.data.projection.ProjectionFactory;
+import org.springframework.data.repository.core.RepositoryInformation;
+import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
+import org.springframework.data.repository.query.parser.Part.Type;
+import org.springframework.util.StringUtils;
 
 /**
  * generate basic mapper for simple repository automatic.
@@ -59,19 +82,19 @@ public class MybatisSimpleRepositoryMapperGenerator {
     private final Class<?> domainClass;
     private final MybatisPersistentEntity<?> persistentEntity;
     private final MybatisMapperGenerator generator;
+    private final QueryAnnotationStatementXmlGenerator queryAnnotationStatementXmlGenerator;
 
-    public MybatisSimpleRepositoryMapperGenerator(Configuration configuration, Dialect dialect, MybatisMappingContext context, Class<?> domainClass) {
+    public MybatisSimpleRepositoryMapperGenerator(Configuration configuration, Dialect dialect, MybatisMappingContext context,RepositoryInformation information) {
         this.configuration = configuration;
         this.dialect = dialect;
         this.context = context;
-        this.domainClass = domainClass;
+        this.domainClass = information.getDomainType();
         this.persistentEntity = context.getPersistentEntity(domainClass);
-
+        this.queryAnnotationStatementXmlGenerator = new QueryAnnotationStatementXmlGenerator(information);
         this.generator = new MybatisMapperGenerator(dialect, persistentEntity);
     }
 
-
-    public void generate() {
+	public void generate() {
         if (null == persistentEntity) {
             logger.warn("Could not find persistent entity for domain: " + domainClass + " from mapping context.");
             return;
@@ -173,6 +196,9 @@ public class MybatisSimpleRepositoryMapperGenerator {
         if (!isStatementExist("_deleteByCondition")) {
             buildDeleteByCondition(builder);
         }
+        
+        this.queryAnnotationStatementXmlGenerator.render(builder);
+      
         builder.append(MAPPER_END);
         String result = builder.toString();
 
@@ -180,8 +206,12 @@ public class MybatisSimpleRepositoryMapperGenerator {
         return result;
     }
 
+ 
 
-    private void buildUpdateSQL(final StringBuilder builder, String statementName, final boolean ignoreNull) {
+
+
+
+	private void buildUpdateSQL(final StringBuilder builder, String statementName, final boolean ignoreNull) {
         if (!persistentEntity.hasIdProperty()) {
             return;
         }

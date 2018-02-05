@@ -117,7 +117,7 @@ public class SimpleMybatisRepository<T, ID extends Serializable> extends SqlSess
   @Transactional
   public <S extends T> S save(S entity) {
     Assert.notNull(entity, "entity can not be null");
-
+    
     if (entityInformation.isNew(entity)) {
       // insert
       insert(entity);

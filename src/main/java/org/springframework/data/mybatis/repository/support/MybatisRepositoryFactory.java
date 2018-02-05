@@ -75,9 +75,8 @@ public class MybatisRepositoryFactory extends RepositoryFactorySupport {
     protected Object getTargetRepository(RepositoryInformation information) {
 
         // generate Mapper statements.
-        new MybatisSimpleRepositoryMapperGenerator(sessionTemplate.getConfiguration(), dialect, mappingContext, information.getDomainType())
-                .generate();
-
+        new MybatisSimpleRepositoryMapperGenerator(sessionTemplate.getConfiguration(), dialect, mappingContext, information).generate();
+        
 
         return getTargetRepositoryViaReflection(information,
                 getEntityInformation(information.getDomainType()),

@@ -107,7 +107,7 @@ public class PartTreeMybatisQuery extends AbstractMybatisQuery {
     private String buildQueryCondition(boolean basic) {
 
         StringBuilder builder = new StringBuilder();
-        builder.append("<trim prefix=\" where \" prefixOverrides=\"and |or \">");
+        builder.append("<trim  prefixOverrides=\"where   ( )\"><trim prefix=\" where \" prefixOverrides=\"and |or \">");
         int c = 0;
         for (Iterator<PartTree.OrPart> iterator = tree.iterator(); iterator.hasNext(); ) {
             PartTree.OrPart orPart = iterator.next();
@@ -188,7 +188,7 @@ public class PartTreeMybatisQuery extends AbstractMybatisQuery {
             builder.append(" )");
 
         }
-        builder.append("</trim>");
+        builder.append("</trim></trim>");
         return builder.toString();
     }
 

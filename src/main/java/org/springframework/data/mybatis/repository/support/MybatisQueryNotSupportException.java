@@ -18,6 +18,10 @@
 
 package org.springframework.data.mybatis.repository.support;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
 /**
  * @author Jarvis Song
  */
@@ -39,5 +43,15 @@ public class MybatisQueryNotSupportException extends RuntimeException {
 
     public MybatisQueryNotSupportException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
+    }
+    
+    @SuppressWarnings("unchecked")
+	public static <T> T unsupportInstance(Class<T> interfaceClass){
+    	if(!interfaceClass.isInterface())throw new MybatisQueryNotSupportException("不支持查询");
+    	return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[] {interfaceClass}, new InvocationHandler() {
+			public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+				throw new MybatisQueryNotSupportException("不支持查询");
+			}
+		});
     }
 }
